@@ -1,0 +1,20 @@
+commit 26bcc33adf9a57157b9ab02e02947adc55745b51
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Thu Mar 26 21:58:17 2020 +0530
+
+    bionic patch
+    
+    Change-Id: I9804c3a82c093b159f24699381d4449da3710ce7
+
+diff --git a/libc/Android.mk b/libc/Android.mk
+index 94f7ce6cf..785ce5d97 100644
+--- a/libc/Android.mk
++++ b/libc/Android.mk
+@@ -607,6 +607,7 @@ libc_openbsd_src_files_32 += \
+ libc_common_cflags := \
+     -D_LIBC=1 \
+     -Wall -Wextra -Wunused \
++    -fno-stack-protector \
+ 
+ use_clang := $(USE_CLANG_PLATFORM_BUILD)
+ 

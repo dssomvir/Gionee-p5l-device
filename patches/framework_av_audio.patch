@@ -1,0 +1,48 @@
+commit 7eb87cb63b8c97d1a77dcaab5656fb389cd97a7b
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Mon Mar 30 13:01:57 2020 +0530
+
+    framework_av_audio
+    
+    Change-Id: Iec26d49c2a86854492098a0c0fe23a860653a60f
+
+diff --git a/services/audioflinger/Threads.cpp b/services/audioflinger/Threads.cpp
+index 5c3726327..baf483370 100644
+--- a/services/audioflinger/Threads.cpp
++++ b/services/audioflinger/Threads.cpp
+@@ -6466,20 +6466,21 @@ reacquire_wakelock:
+         mTimestamp.mTimeNs[ExtendedTimestamp::LOCATION_SERVER] = systemTime();
+ 
+         // Update server timestamp with kernel stats
+-        if (mInput->stream->get_capture_position != nullptr
+-                && mPipeSource.get() == nullptr /* don't obtain for FastCapture, could block */) {
+-            int64_t position, time;
+-            int ret = mInput->stream->get_capture_position(mInput->stream, &position, &time);
+-            if (ret == NO_ERROR) {
+-                mTimestamp.mPosition[ExtendedTimestamp::LOCATION_KERNEL] = position;
+-                mTimestamp.mTimeNs[ExtendedTimestamp::LOCATION_KERNEL] = time;
+-                // Note: In general record buffers should tend to be empty in
+-                // a properly running pipeline.
+-                //
+-                // Also, it is not advantageous to call get_presentation_position during the read
+-                // as the read obtains a lock, preventing the timestamp call from executing.
+-            }
+-        }
++
++        // if (mInput->stream->get_capture_position != nullptr
++        //         && mPipeSource.get() == nullptr /* don't obtain for FastCapture, could block */) {
++        //     int64_t position, time;
++        //     int ret = mInput->stream->get_capture_position(mInput->stream, &position, &time);
++        //     if (ret == NO_ERROR) {
++        //         mTimestamp.mPosition[ExtendedTimestamp::LOCATION_KERNEL] = position;
++        //         mTimestamp.mTimeNs[ExtendedTimestamp::LOCATION_KERNEL] = time;
++        //         // Note: In general record buffers should tend to be empty in
++        //         // a properly running pipeline.
++        //         //
++        //         // Also, it is not advantageous to call get_presentation_position during the read
++        //         // as the read obtains a lock, preventing the timestamp call from executing.
++        //     }
++        // }
+         // Use this to track timestamp information
+         // ALOGD("%s", mTimestamp.toString().c_str());
+ 

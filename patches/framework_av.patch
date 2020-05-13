@@ -1,0 +1,59 @@
+commit 16e4b8ced0c84f415a116deb0cf18752f10c92bb
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Sat Mar 28 20:54:10 2020 +0530
+
+    framework_av
+    
+    Change-Id: If9f4cb84777f3833fe8448c76f6d5996b84f50ce
+
+diff --git a/media/libstagefright/FFMPEGSoftCodec.cpp b/media/libstagefright/FFMPEGSoftCodec.cpp
+index 9471c3929..daf2fdb3c 100644
+--- a/media/libstagefright/FFMPEGSoftCodec.cpp
++++ b/media/libstagefright/FFMPEGSoftCodec.cpp
+@@ -1450,14 +1450,14 @@ void* FFMPEGSoftCodec::sLibHandle = NULL;
+ void FFMPEGSoftCodec::loadPlugin() {
+     char lib[PROPERTY_VALUE_MAX];
+     if (!sLibHandle && property_get("media.sf.extractor-plugin", lib, NULL)) {
++        dlerror(); // clear any existing error
+         if ((sLibHandle = ::dlopen(lib, RTLD_LAZY)) != NULL) {
+             sSnifferFunc = (DataSource::SnifferFunc)dlsym(sLibHandle, "SniffFFMPEG");
+             sExtractorFunc = (CreateExtractorFunc)dlsym(sLibHandle, "CreateFFMPEGExtractor");
+-        }
+-        if (dlerror()) {
++        } else {
+             sSnifferFunc = NULL;
+             sExtractorFunc = NULL;
+-            dlclose(sLibHandle);
++  //        dlclose(sLibHandle);
+             ALOGE("Failed to load FFMPEG plugin: %s", dlerror());
+         }
+     }
+diff --git a/media/libstagefright/MediaSource.cpp b/media/libstagefright/MediaSource.cpp
+index a17757a8e..bc0206f32 100644
+--- a/media/libstagefright/MediaSource.cpp
++++ b/media/libstagefright/MediaSource.cpp
+@@ -23,3 +23,24 @@ MediaSource::MediaSource() {}
+ MediaSource::~MediaSource() {}
+ 
+ }  // namespace android
++
++extern "C" {
++
++bool _ZNK7android11MediaSource11ReadOptions14getNonBlockingEv(android::IMediaSource::ReadOptions *readOptions) {
++    bool res = readOptions->getNonBlocking();
++    return res;
++}
++
++bool _ZNK7android11MediaSource11ReadOptions9getSeekToEPxPNS1_8SeekModeE(android::IMediaSource::ReadOptions *readOptions, int64_t *time_us, android::IMediaSource::ReadOptions::SeekMode *mode) {
++    bool res = readOptions->getSeekTo(time_us, mode);
++    return res;
++}
++
++int64_t _ZNK7android11MediaSource11ReadOptions9getLateByEv(android::IMediaSource::ReadOptions *readOptions) {
++    int64_t res = readOptions->getLateBy();
++    return res;
++}
++
++}
++
++

@@ -1,0 +1,21 @@
+commit 2a25c869cba77b5ec15d86b649b755b0691e36cb
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Thu Mar 26 22:03:49 2020 +0530
+
+    framework webview
+    
+    Change-Id: I99e392cb48f50cdf18f8ab86d49e48bde0f93f6f
+
+diff --git a/chromium/plat_support/graphic_buffer_impl.cpp b/chromium/plat_support/graphic_buffer_impl.cpp
+index 4426778..c65fa2d 100644
+--- a/chromium/plat_support/graphic_buffer_impl.cpp
++++ b/chromium/plat_support/graphic_buffer_impl.cpp
+@@ -27,7 +27,7 @@ GraphicBufferImpl::GraphicBufferImpl(uint32_t w, uint32_t h)
+   : mBuffer(new android::GraphicBuffer(w, h, PIXEL_FORMAT_RGBA_8888,
+        android::GraphicBuffer::USAGE_HW_TEXTURE |
+        android::GraphicBuffer::USAGE_SW_READ_OFTEN |
+-       android::GraphicBuffer::USAGE_SW_WRITE_OFTEN)) {
++       android::GraphicBuffer::USAGE_SW_WRITE_OFTEN, "<unknown")) {
+ }
+ 
+ GraphicBufferImpl::~GraphicBufferImpl() {

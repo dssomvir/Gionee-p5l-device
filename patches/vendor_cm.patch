@@ -1,0 +1,56 @@
+commit 200d80e5e6de403de57fa4d7202c405472c99a05
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Sat Apr 4 21:37:15 2020 +0530
+
+    cm_vendor
+    
+    Change-Id: I38e7b089d6b1c2328ea871816d259aa39cf10ece
+
+diff --git a/config/common.mk b/config/common.mk
+index 55d1dac8..d8b359d6 100644
+--- a/config/common.mk
++++ b/config/common.mk
+@@ -91,17 +91,15 @@ include vendor/cm/config/twrp.mk
+ endif
+ 
+ # Bootanimation
+-PRODUCT_PACKAGES += \
+-    bootanimation.zip
++#PRODUCT_PACKAGES += \
++#    bootanimation.zip
+ 
+ # Required CM packages
+ PRODUCT_PACKAGES += \
+     BluetoothExt \
+-    CMAudioService \
+     CMParts \
+     Development \
+     Profiles \
+-    WeatherManagerService
+ 
+ # Optional CM packages
+ PRODUCT_PACKAGES += \
+@@ -117,21 +115,14 @@ PRODUCT_PACKAGES += \
+ 
+ # Custom CM packages
+ PRODUCT_PACKAGES += \
+-    AudioFX \
+     CMSettingsProvider \
+     LineageSetupWizard \
+-    Eleven \
+-    ExactCalculator \
+-    Jelly \
+-    LockClock \
+-    Trebuchet \
+     Updater \
+     WallpaperPicker \
+-    WeatherProvider
+ 
+ # Exchange support
+-PRODUCT_PACKAGES += \
+-    Exchange2
++#PRODUCT_PACKAGES += \
++#    Exchange2
+ 
+ # Extra tools in CM
+ PRODUCT_PACKAGES += \

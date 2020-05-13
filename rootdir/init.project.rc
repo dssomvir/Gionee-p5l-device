@@ -1,0 +1,94 @@
+# MTK project .rc configure
+
+import init.mt6735.usb.rc
+
+on init
+    mkdir /mnt/media_rw/usbotg 0700 media_rw media_rw
+    mkdir /storage/usbotg 0700 root root
+
+on post-fs-data
+
+#
+# Connectivity related device nodes & configuration (begin)
+#
+
+#/dev/ttyMT2 for Connectivity BT/FM/GPS usage
+    chmod 0660 /dev/ttyMT2
+    chown system system /dev/ttyMT2
+
+
+
+# Create char device file for WMT, GPS, BT, FM, WIFI
+    mknod /dev/wmtWifi c 153 0
+    chmod 0660 /dev/wmtWifi
+    chown system system /dev/wmtWifi
+
+#Camera
+    chmod 0660 /dev/DW9714AF
+    chown system camera /dev/DW9714AF
+
+#SMB
+    chown system system /proc/smb/ScreenComm
+    chmod 0660 /proc/smb/ScreenComm
+
+# BT
+#    chmod 0660 /dev/stpbt
+#    chown bluetooth radio /dev/stpbt
+
+# GPS
+#    chown gps gps /dev/stpgps
+    chown gps gps /sys/class/gpsdrv/gps/pwrctl
+    chown gps gps /sys/class/gpsdrv/gps/suspend
+    chown gps gps /sys/class/gpsdrv/gps/state
+    chown gps gps /sys/class/gpsdrv/gps/pwrsave
+    chown gps gps /sys/class/gpsdrv/gps/status
+#    chmod 0660 /dev/stpgps
+
+# WiFi
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wpa_supplicant 0770 wifi wifi
+    chown wifi wifi /data/misc/wifi
+
+#Define device for ATCID
+    chmod 660 /dev/ttyGS0
+    chown system /dev/ttyGS0
+    chmod 660 /dev/ttyGS1
+    chown system /dev/ttyGS1
+
+# Char device for BT 3.0 HS
+    mknod /dev/ampc0 c 151 0
+    chown bluetooth bluetooth /dev/ampc0
+    chmod 0660 /dev/ampc0
+
+# for notification light
+    chown system system /sys/devices/mx_leds/leds_mode
+
+#
+# Connectivity related device nodes & configuration (end)
+#
+
+# Encrypt phone function
+    setprop vold.post_fs_data_done 1
+
+#
+# Connectivity related services (Begin)
+#
+
+
+service wmtLoader /system/bin/wmt_loader
+    user root
+    group root
+   class core
+    oneshot
+
+
+service conn_launcher /system/bin/6620_launcher -p /system/etc/firmware/
+    user system
+    group system
+    class core
+
+#
+# Connectivity related services (End)
+#
+

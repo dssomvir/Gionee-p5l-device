@@ -1,0 +1,551 @@
+commit bc8fb784a869128834bae22d9c6d758469fa0812
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Tue Mar 31 15:10:21 2020 +0530
+
+    system_core
+    
+    Change-Id: Ib1e2244479414b991eeff28a1e02dc0295ccc431
+
+diff --git a/include/cutils/alelog.h b/include/cutils/alelog.h
+new file mode 100644
+index 000000000..294c7a927
+--- /dev/null
++++ b/include/cutils/alelog.h
+@@ -0,0 +1,59 @@
++#if !defined(__ALE_H__)
++#define __ALE_H__
++
++#if defined(__cplusplus)
++extern "C" {
++#endif
++
++#define LOGGER_ALE_MASK         0xf0
++
++#define LOGGER_ALE_MSG_RAW      0x00
++#define LOGGER_ALE_MSG_K        0x10
++#define LOGGER_ALE_MSG_N        0x20
++#define LOGGER_ALE_MSG_J        0x30
++#define LOGGER_ALE_XMSG_K       0x40
++#define LOGGER_ALE_XMSG_N       0x50
++#define LOGGER_ALE_XMSG_J       0x60
++
++#define LOGGER_ALE_MSG_SIZE     768
++
++#define LOGGER_ALE_ARGS_MAX 16
++struct ale_convert {
++    const char *tag_str;
++    const char *fmt_ptr;
++    const char *file;
++    int lineno;
++    unsigned int hash;
++    char params[LOGGER_ALE_ARGS_MAX];
++};
++
++int ale_log_output_binary(int prio, const char *tag, const void *payload, size_t len);
++
++int ale_log_output(int bufid, int prio, const struct ale_convert *convert, ...);
++
++#define ale_log_print(bufid, prio, tag, fmt, ...)			\
++  ({									\
++      if (__builtin_constant_p(tag) && __builtin_constant_p(fmt)) {     \
++          static const struct ale_convert ____ale_rec____ =		\
++	    {								\
++                __builtin_constant_p(tag) ? tag : NULL,			\
++                __builtin_constant_p(fmt) ? fmt : NULL,			\
++                __FILE__,                                               \
++                __builtin_constant_p(prio) ? prio : 0,                  \
++                0,                                                      \
++                "" };                                                   \
++          ale_log_output(bufid, prio, &____ale_rec____, ##__VA_ARGS__);	\
++      }                                                                 \
++      else {                                                            \
++          struct ale_convert ale =                                      \
++              {tag, fmt, NULL,                                          \
++               0, 0, ""};                                               \
++          ale_log_output(bufid, prio, &ale, ##__VA_ARGS__);		\
++      }                                                                 \
++  })
++
++#if defined(__cplusplus)
++};
++#endif
++
++#endif
+diff --git a/include/cutils/logger.h b/include/cutils/logger.h
+new file mode 100644
+index 000000000..04f3fb05b
+--- /dev/null
++++ b/include/cutils/logger.h
+@@ -0,0 +1,81 @@
++/* utils/logger.h
++** 
++** Copyright 2007, The Android Open Source Project
++**
++** This file is dual licensed.  It may be redistributed and/or modified
++** under the terms of the Apache 2.0 License OR version 2 of the GNU
++** General Public License.
++*/
++
++#ifndef _UTILS_LOGGER_H
++#define _UTILS_LOGGER_H
++
++#include <stdint.h>
++
++/*
++ * The userspace structure for version 1 of the logger_entry ABI.
++ * This structure is returned to userspace by the kernel logger
++ * driver unless an upgrade to a newer ABI version is requested.
++ */
++struct logger_entry {
++    uint16_t    len;    /* length of the payload */
++    uint16_t    __pad;  /* no matter what, we get 2 bytes of padding */
++    int32_t     pid;    /* generating process's pid */
++    int32_t     tid;    /* generating process's tid */
++    int32_t     sec;    /* seconds since Epoch */
++    int32_t     nsec;   /* nanoseconds */
++    char        msg[0]; /* the entry's payload */
++};
++
++/*
++ * The userspace structure for version 2 of the logger_entry ABI.
++ * This structure is returned to userspace if ioctl(LOGGER_SET_VERSION)
++ * is called with version==2
++ */
++struct logger_entry_v2 {
++    uint16_t    len;       /* length of the payload */
++    uint16_t    hdr_size;  /* sizeof(struct logger_entry_v2) */
++    int32_t     pid;       /* generating process's pid */
++    int32_t     tid;       /* generating process's tid */
++    int32_t     sec;       /* seconds since Epoch */
++    int32_t     nsec;      /* nanoseconds */
++    uint32_t    euid;      /* effective UID of logger */
++    char        msg[0];    /* the entry's payload */
++};
++
++#define LOGGER_LOG_MAIN		"log/main"
++#define LOGGER_LOG_RADIO	"log/radio"
++#define LOGGER_LOG_EVENTS	"log/events"
++#define LOGGER_LOG_SYSTEM	"log/system"
++
++/*
++ * The maximum size of the log entry payload that can be
++ * written to the kernel logger driver. An attempt to write
++ * more than this amount to /dev/log/* will result in a
++ * truncated log entry.
++ */
++#define LOGGER_ENTRY_MAX_PAYLOAD	4076
++
++/*
++ * The maximum size of a log entry which can be read from the
++ * kernel logger driver. An attempt to read less than this amount
++ * may result in read() returning EINVAL.
++ */
++#define LOGGER_ENTRY_MAX_LEN		(5*1024)
++
++#ifdef HAVE_IOCTL
++
++#include <sys/ioctl.h>
++
++#define __LOGGERIO	0xAE
++
++#define LOGGER_GET_LOG_BUF_SIZE		_IO(__LOGGERIO, 1) /* size of log */
++#define LOGGER_GET_LOG_LEN		_IO(__LOGGERIO, 2) /* used log len */
++#define LOGGER_GET_NEXT_ENTRY_LEN	_IO(__LOGGERIO, 3) /* next entry len */
++#define LOGGER_FLUSH_LOG		_IO(__LOGGERIO, 4) /* flush log */
++#define LOGGER_GET_VERSION		_IO(__LOGGERIO, 5) /* abi version */
++#define LOGGER_SET_VERSION		_IO(__LOGGERIO, 6) /* abi version */
++
++#endif // HAVE_IOCTL
++
++#endif /* _UTILS_LOGGER_H */
+diff --git a/include/cutils/xlog.h b/include/cutils/xlog.h
+new file mode 100644
+index 000000000..fb54cc3c5
+--- /dev/null
++++ b/include/cutils/xlog.h
+@@ -0,0 +1,178 @@
++#if !defined(_XLOG_H)
++#define _XLOG_H
++
++#include <cutils/log.h>
++#include <cutils/alelog.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++int xlogf_java_tag_is_on(const char *name, int level);
++int xlogf_native_tag_is_on(const char *name, int level);
++
++int xlogf_java_xtag_is_on(const char *name, int level);
++int xlogf_native_xtag_is_on(const char *name, int level);
++
++#ifndef XLOG_TAG
++#define XLOG_TAG NULL
++#endif
++
++#ifndef SXLOGV
++#define SXLOGV(...) ((void)SXLOG_PRI(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGD
++#define SXLOGD(...) ((void)SXLOG_PRI(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGI
++#define SXLOGI(...) ((void)SXLOG_PRI(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGW
++#define SXLOGW(...) ((void)SXLOG_PRI(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGE
++#define SXLOGE(...) ((void)SXLOG_PRI(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGF
++#define SXLOGF(...) ((void)SXLOG_PRI(ANDROID_LOG_FATAL, LOG_TAG, __VA_ARGS__))
++#endif
++#if LOG_NDEBUG
++#define SXLOG_ASSERT(cond, ...)			\
++    ( (CONDITION(cond))				\
++      ? ((void)SXLOGF(LOG_TAG, __VA_ARGS__))	\
++      : (void)0 )
++#else
++#define SXLOG_ASSERT(cond, ...) ((void)0)
++#endif
++
++#define SXLOG_ALWAYS_ASSERT(cond,...)                    \
++  ( (CONDITION(cond))					 \
++    ? ((void)SXLOGF(LOG_TAG, __VA_ARGS__))		 \
++      : (void)0 )
++
++#ifndef XLOGV
++#define XLOGV(...) ((void)XLOG_PRI(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGD
++#define XLOGD(...) ((void)XLOG_PRI(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGI
++#define XLOGI(...) ((void)XLOG_PRI(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGW
++#define XLOGW(...) ((void)XLOG_PRI(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGE
++#define XLOGE(...) ((void)XLOG_PRI(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGF
++#define XLOGF(...) ((void)XLOG_PRI(ANDROID_LOG_FATAL, LOG_TAG, __VA_ARGS__))
++#endif
++
++#if LOG_NDEBUG
++#define XLOG_ASSERT(cond, ...)                  \
++    (!(cond)                                    \
++     ? ((void)XLOGF(__VA_ARGS__))		\
++     : (void)0)
++#else
++#define XLOG_ASSERT(cond, ...) ((void)0)
++#endif
++
++#define XLOG_ALWAY_ASSERT(cond, ...)                    \
++    (!(cond)                                            \
++     ? ((void)XLOGF(__VA_ARGS__))			\
++     : (void)0)
++
++
++#ifndef SXLOGV2
++#define SXLOGV2(...) ((void)SXLOG_PRI(ANDROID_LOG_VERBOSE, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGD2
++#define SXLOGD2(...) ((void)SXLOG_PRI(ANDROID_LOG_DEBUG, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGI2
++#define SXLOGI2(...) ((void)SXLOG_PRI(ANDROID_LOG_INFO, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGW2
++#define SXLOGW2(...) ((void)SXLOG_PRI(ANDROID_LOG_WARN, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGE2
++#define SXLOGE2(...) ((void)SXLOG_PRI(ANDROID_LOG_ERROR, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef SXLOGF2
++#define SXLOGF2(...) ((void)SXLOG_PRI(ANDROID_LOG_FATAL, XLOG_TAG, __VA_ARGS__))
++#endif
++
++#ifndef XLOGV2
++#define XLOGV2(...) ((void)XLOG_PRI(ANDROID_LOG_VERBOSE, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGD2
++#define XLOGD2(...) ((void)XLOG_PRI(ANDROID_LOG_DEBUG, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGI2
++#define XLOGI2(...) ((void)XLOG_PRI(ANDROID_LOG_INFO, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGW2
++#define XLOGW2(...) ((void)XLOG_PRI(ANDROID_LOG_WARN, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGE2
++#define XLOGE2(...) ((void)XLOG_PRI(ANDROID_LOG_ERROR, XLOG_TAG, __VA_ARGS__))
++#endif
++#ifndef XLOGF2
++#define XLOGF2(...) ((void)XLOG_PRI(ANDROID_LOG_FATAL, XLOG_TAG, __VA_ARGS__))
++#endif
++
++struct xlog_record {
++	const char *tag_str;
++	const char *fmt_str;
++	int prio;
++};
++
++#if defined(__cplusplus)
++extern "C" {
++#endif
++
++int __xlog_buf_printf(int bufid, const struct xlog_record *rec, ...);
++
++#if defined(__cplusplus)
++}
++#endif
++
++#if !defined(HAVE_ALE_FEATURE)
++
++#define xlog_buf_printf(bufid, prio, tag, fmt, ...)			\
++	({								\
++		static const struct xlog_record _xlog_rec =		\
++			{tag, fmt, prio};				\
++		__xlog_buf_printf(bufid, &_xlog_rec, ##__VA_ARGS__);	\
++	})
++
++#else
++
++#define xlog_buf_printf(bufid, prio, tag, fmt, ...)			\
++  ({									\
++      static const struct ale_convert ____xlog_ale_rec____ =		\
++          { tag, fmt, __FILE__, prio, 0, "" };				\
++      ale_log_output(bufid, prio, &____xlog_ale_rec____,		\
++                     ##__VA_ARGS__);                                    \
++  })
++
++#endif
++
++#define XLOG_PRI(priority, tag, ...)                            \
++    xlog_buf_printf(LOG_ID_MAIN, priority, tag, __VA_ARGS__)
++
++#define SXLOG_PRI(priority, tag, ...)                           \
++    xlog_buf_printf(LOG_ID_MAIN, priority, tag, __VA_ARGS__)
++
++#define xlog_printf(priority, tag, ...)                         \
++    xlog_buf_printf(LOG_ID_MAIN, priority, tag, __VA_ARGS__)
++
++#define sxlog_printf(priority, tag, ...)                        \
++    xlog_buf_printf(LOG_ID_SYSTEM, priority, tag, __VA_ARGS__)
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
+diff --git a/include/netutils/ifc.h b/include/netutils/ifc.h
+index 3b272343d..1548c4657 100644
+--- a/include/netutils/ifc.h
++++ b/include/netutils/ifc.h
+@@ -60,7 +60,9 @@ extern int ifc_configure(const char *ifname, in_addr_t address,
+                          in_addr_t dns1, in_addr_t dns2);
+ 
+ extern in_addr_t prefixLengthToIpv4Netmask(int prefix_length);
+-
++#ifdef MTK_HARDWARE
++extern int ifc_set_throttle(const char *ifname, int rxKbps, int txKbps);
++#endif
+ __END_DECLS
+ 
+ #endif /* _NETUTILS_IFC_H_ */
+diff --git a/init/init.cpp b/init/init.cpp
+index 7a370596e..f0b0d4f0f 100755
+--- a/init/init.cpp
++++ b/init/init.cpp
+@@ -85,7 +85,7 @@ int have_console;
+ std::string console_name = "/dev/console";
+ static time_t process_needs_restart;
+ 
+-const char *ENV[32];
++const char *ENV[64];
+ 
+ bool waiting_for_exec = false;
+ 
+diff --git a/init/init.h b/init/init.h
+index 345d442c0..f93d0c5ba 100644
+--- a/init/init.h
++++ b/init/init.h
+@@ -24,7 +24,7 @@ class Service;
+ 
+ #define COMMAND_RETRY_TIMEOUT 5
+ 
+-extern const char *ENV[32];
++extern const char *ENV[64];
+ extern bool waiting_for_exec;
+ extern int have_console;
+ extern std::string console_name;
+diff --git a/libcutils/fs_config.c b/libcutils/fs_config.c
+index 68cfcbe00..f19238606 100644
+--- a/libcutils/fs_config.c
++++ b/libcutils/fs_config.c
+@@ -143,7 +143,8 @@ static const struct fs_path_config android_files[] = {
+     { 00700, AID_SYSTEM,    AID_SHELL,     CAP_MASK_LONG(CAP_BLOCK_SUSPEND), "system/bin/inputflinger" },
+ 
+     /* Support FIFO scheduling mode in SurfaceFlinger. */
+-    { 00755, AID_SYSTEM,    AID_GRAPHICS,     CAP_MASK_LONG(CAP_SYS_NICE), "system/bin/surfaceflinger" },
++    /* Disabled for now as this caused LD_PRELOAD and LD_SHIM_LIBS to be sanitized in linker */
++    //{ 00755, AID_SYSTEM,    AID_GRAPHICS,     CAP_MASK_LONG(CAP_SYS_NICE), "system/bin/surfaceflinger" },
+ 
+     { 00750, AID_ROOT,      AID_ROOT,      0, "system/bin/uncrypt" },
+     { 00750, AID_ROOT,      AID_ROOT,      0, "system/bin/install-recovery.sh" },
+diff --git a/liblog/Android.mk b/liblog/Android.mk
+index b24b489aa..4506ee1af 100644
+--- a/liblog/Android.mk
++++ b/liblog/Android.mk
+@@ -41,6 +41,7 @@ LOCAL_SRC_FILES := $(liblog_host_sources)
+ # some files must not be compiled when building against Mingw
+ # they correspond to features not used by our host development tools
+ # which are also hard or even impossible to port to native Win32
++LOCAL_WHOLE_STATIC_LIBRARIES := libxlog
+ LOCAL_SRC_FILES_darwin := event_tag_map.c
+ LOCAL_SRC_FILES_linux := event_tag_map.c
+ LOCAL_SRC_FILES_windows := uio.c
+@@ -65,6 +66,7 @@ include $(CLEAR_VARS)
+ LOCAL_MODULE := liblog
+ LOCAL_SRC_FILES := $(liblog_target_sources)
+ LOCAL_CFLAGS := -Werror -fvisibility=hidden $(liblog_cflags)
++LOCAL_WHOLE_STATIC_LIBRARIES := libxlog
+ # AddressSanitizer runtime library depends on liblog.
+ LOCAL_SANITIZE := never
+ include $(BUILD_STATIC_LIBRARY)
+diff --git a/libnetutils/ifc_utils.c b/libnetutils/ifc_utils.c
+index 7739cf459..79da85b41 100644
+--- a/libnetutils/ifc_utils.c
++++ b/libnetutils/ifc_utils.c
+@@ -37,6 +37,7 @@
+ #include <linux/ipv6_route.h>
+ #include <linux/rtnetlink.h>
+ #include <linux/sockios.h>
++#include <linux/un.h>
+ 
+ #include "netutils/ifc.h"
+ 
+@@ -737,3 +738,78 @@ ifc_configure(const char *ifname,
+ 
+     return 0;
+ }
++
++#ifdef MTK_HARDWARE
++static int ifc_netd_sock_init(void)
++{
++    int ifc_netd_sock;
++    const int one = 1;
++    struct sockaddr_un netd_addr;
++  
++        ifc_netd_sock = socket(AF_UNIX, SOCK_STREAM, 0);
++        if (ifc_netd_sock < 0) {
++            printerr("ifc_netd_sock_init: create socket failed");
++            return -1;
++        }
++  
++        setsockopt(ifc_netd_sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
++        memset(&netd_addr, 0, sizeof(netd_addr));
++        netd_addr.sun_family = AF_UNIX;
++        strlcpy(netd_addr.sun_path, "/dev/socket/netd",
++            sizeof(netd_addr.sun_path));
++        if (TEMP_FAILURE_RETRY(connect(ifc_netd_sock,
++                     (const struct sockaddr*) &netd_addr,
++                     sizeof(netd_addr))) != 0) {
++            printerr("ifc_netd_sock_init: connect to netd failed, fd=%d, err: %d(%s)", 
++                ifc_netd_sock, errno, strerror(errno));
++            close(ifc_netd_sock);
++            return -1;
++        }
++  
++    if (DBG) printerr("ifc_netd_sock_init fd=%d", ifc_netd_sock);
++    return ifc_netd_sock;
++}
++
++int ifc_set_throttle(const char *ifname, int rxKbps, int txKbps)
++{
++    FILE* fnetd = NULL;
++    int ret = -1;
++    int seq = 1;
++    char rcv_buf[24];
++	int nread = 0;
++	int netd_sock = 0;
++	
++    ALOGD("enter ifc_set_throttle: ifname = %s, rx = %d kbs, tx = %d kbs", ifname, rxKbps, txKbps);
++
++    netd_sock = ifc_netd_sock_init();
++    if(netd_sock <= 0)
++        goto exit;
++    
++    // Send the request.
++    fnetd = fdopen(netd_sock, "r+");
++	if(fnetd == NULL){
++		ALOGE("open netd socket failed, err:%d(%s)", errno, strerror(errno));
++		goto exit;
++	}
++    if (fprintf(fnetd, "%d interface setthrottle %s %d %d", seq, ifname, rxKbps, txKbps) < 0) {
++        goto exit;
++    }
++    // literal NULL byte at end, required by FrameworkListener
++    if (fputc(0, fnetd) == EOF ||
++        fflush(fnetd) != 0) {
++        goto exit;
++    }
++    ret = 0;
++
++	//Todo: read the whole response from netd
++	nread = fread(rcv_buf, 1, 20, fnetd);
++	rcv_buf[23] = 0;
++	ALOGD("response: %s", rcv_buf);
++exit:
++    if (fnetd != NULL) {
++        fclose(fnetd);
++    }
++  
++    return ret;
++}
++#endif
+diff --git a/rootdir/init.rc b/rootdir/init.rc
+index 498203c83..0f36851c5 100644
+--- a/rootdir/init.rc
++++ b/rootdir/init.rc
+@@ -9,6 +9,7 @@ import /init.usb.rc
+ import /init.${ro.hardware}.rc
+ import /init.usb.configfs.rc
+ import /init.${ro.zygote}.rc
++import /init.trace.rc
+ 
+ # Include CM's extra init file
+ import /init.cm.rc
+@@ -35,6 +36,9 @@ on early-init
+ on init
+     sysclktz 0
+ 
++loglevel 6 ####
++    write /proc/bootprof "INIT: on init start" ####
++
+     # Mix device-specific information into the entropy pool
+     copy /proc/cmdline /dev/urandom
+     copy /default.prop /dev/urandom
+@@ -595,9 +599,6 @@ on nonencrypted
+     class_start main
+     class_start late_start
+ 
+-on property:sys.init_log_level=*
+-    loglevel ${sys.init_log_level}
+-
+ on charger
+     class_start charger
+ 
+@@ -679,6 +680,6 @@ service flash_recovery /system/bin/install-recovery.sh
+     disabled
+ 
+ # update recovery if enabled
+-#on property:persist.sys.recovery_update=true
+-#    start flash_recovery
++on property:persist.sys.recovery_update=true
++    start flash_recovery
+ 

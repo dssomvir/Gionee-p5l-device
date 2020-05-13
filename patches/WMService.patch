@@ -1,0 +1,25 @@
+commit 1fe07b618f9a12b66fb83cfd2ad6040114a64715
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Sat Mar 28 21:02:42 2020 +0530
+
+    WMService
+    
+    Change-Id: I55b494ddd4d3c55a40a7e469c37934fb84287dad
+
+diff --git a/services/core/java/com/android/server/wm/WindowManagerService.java b/services/core/java/com/android/server/wm/WindowManagerService.java
+index 471dd98ca25..aa4ebb006a1 100644
+--- a/services/core/java/com/android/server/wm/WindowManagerService.java
++++ b/services/core/java/com/android/server/wm/WindowManagerService.java
+@@ -729,9 +729,9 @@ public class WindowManagerService extends IWindowManager.Stub
+     PowerManager mPowerManager;
+     PowerManagerInternal mPowerManagerInternal;
+ 
+-    float mWindowAnimationScaleSetting = 1.0f;
+-    float mTransitionAnimationScaleSetting = 1.0f;
+-    float mAnimatorDurationScaleSetting = 1.0f;
++    float mWindowAnimationScaleSetting = 0.50f;
++    float mTransitionAnimationScaleSetting = 0.50f;
++    float mAnimatorDurationScaleSetting = 0.50f;
+     boolean mAnimationsDisabled = false;
+ 
+     final InputManagerService mInputManager;

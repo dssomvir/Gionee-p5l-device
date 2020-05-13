@@ -1,0 +1,21 @@
+commit 101c2b3d4939b43c34068afddc33bb28d1db1bb8
+Author: Dssomvir <dssomvir@gmail.com>
+Date:   Sat Mar 28 21:23:24 2020 +0530
+
+    settings
+    
+    Change-Id: Iaae3ff0c5a620efa34ed066c314e77f14a05309b
+
+diff --git a/src/com/android/settings/DevelopmentSettings.java b/src/com/android/settings/DevelopmentSettings.java
+index fc8ec91a95..ebc8dedcb0 100644
+--- a/src/com/android/settings/DevelopmentSettings.java
++++ b/src/com/android/settings/DevelopmentSettings.java
+@@ -1928,7 +1928,7 @@ public class DevelopmentSettings extends RestrictedSettingsFragment
+ 
+     private void writeAnimationScaleOption(int which, ListPreference pref, Object newValue) {
+         try {
+-            float scale = newValue != null ? Float.parseFloat(newValue.toString()) : 1;
++            float scale = newValue != null ? Float.parseFloat(newValue.toString()) : 0.50f;
+             mWindowManager.setAnimationScale(which, scale);
+             updateAnimationScaleValue(which, pref);
+         } catch (RemoteException e) {
