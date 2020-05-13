@@ -1,0 +1,1 @@
+# Gionee-p5l-device
